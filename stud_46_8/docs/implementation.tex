@@ -1,0 +1,92 @@
+% !TeX spellcheck = ru_RU
+\setcounter{chapter}{3}
+\clearpage
+
+В листингах \ref{lst:full_alg}, \ref{lst:ant} представлена параллельная реализация муравьиного алгоритма.
+
+\setcounter{lstlisting}{7}
+\begin{center}
+	\begin{lstlisting}[label=lst:full_alg,caption=Параллельный муравьиный алгоритм (основной поток)]
+pair<double, vector<int>> ant_alg_thr1(vector<vector<double>>& matrix, double alpha, double beta, double ro, int days, int thrs)
+{
+	mutex m, m1;
+	int places = matrix.size();
+	int ants = places;
+	vector<thread> threads;
+	vector<parameters> arg(thrs);
+	int delta = days / thrs;
+	double min_dist = numeric_limits<double>::max();
+	vector<int> best_way;
+	auto phero = calc_pheromones(places);
+	auto vis = calc_visibility(matrix, places);
+	for (int th = 0; th < thrs; ++th)
+	{
+		arg[th].places = places;
+		arg[th].alpha = alpha;
+		arg[th].matrix = matrix;
+		arg[th].q = calc_q(arg[th].matrix, places);
+		arg[th].min_dist = numeric_limits<double>::max();
+		arg[th].pheromones = phero;
+		arg[th].visibility = vis;
+		arg[th].ro = ro;
+		arg[th].mute1 = &m1;
+		arg[th].mute = &m;
+		arg[th].min_dist = min_dist;
+		arg[th].best_way = best_way;
+		if (th < thrs - 1)
+			arg[th].to_do = delta;
+		else
+			arg[th].to_do = delta + days % thrs;
+		threads.push_back(thread(thread_work1, ref(arg[th])));
+	}
+	for (int th = 0; th < thrs; ++th)
+		threads[th].join();
+	return pair<double, vector<int>>(min_dist, best_way);
+}
+	\end{lstlisting}
+\end{center}
+\clearpage
+
+
+\begin{center}
+	\begin{lstlisting}[label=lst:ant,caption=Параллельный муравьиный алгоритм (вспомогательный поток)]
+void thread_work1(parameters& arg)
+{
+	srand(time(nullptr));
+	int ants = arg.places;
+	double beta = 1 - arg.alpha;
+	for (int i = 0; i < arg.to_do; ++i)
+	{
+		vector<int> route(arg.places);
+		iota(begin(route), end(route), 0);
+		arg.visited = calc_visited_places(route, ants);
+		for (int ant = 0; ant < ants; ++ant)
+		{
+			while (arg.visited[ant].size() != ants)
+			{
+				vector<double> pk = find_ways(arg.pheromones, arg.visibility, arg.visited, arg.places, ant, arg.alpha, beta);
+				int chosen_place = choose_next_place_by_possibility(pk);
+				arg.visited[ant].push_back(chosen_place - 1);
+			}
+			double cur_length = calc_length(arg.matrix, arg.visited[ant]);
+			if (cur_length < arg.min_dist)
+			{
+				arg.mute->lock();
+				if (cur_length < arg.min_dist)
+				{
+					arg.min_dist = cur_length;
+					arg.best_way = arg.visited[ant];
+				}
+				arg.mute->unlock();
+			}
+		}
+		auto p = update_pheromones(arg.matrix, arg.places, arg.visited, arg.pheromones, arg.q, arg.ro);
+		arg.mute1->lock();
+		arg.pheromones = p;
+		arg.mute1->unlock();
+	}
+}
+		\end{lstlisting}
+	\clearpage
+
+\end{center}

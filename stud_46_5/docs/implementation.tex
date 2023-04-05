@@ -1,0 +1,202 @@
+% !TeX spellcheck = ru_RU
+\chapter{Технологическая часть}
+В данном разделе рассмотрены средства реализации, а также представлены листинги последовательной и параллельной работы стадий конвейера.
+
+%\section{Средства реализации}
+\section{Реализация алгоритмов}
+Для данной работы был выбран язык С++ \cite{cpp}. В данной лабораторной работы требуются инструменты для работы с массивами и потоками, замеров времени работы выполняемой программы. Все перечисленные инструменты присутствуют в выбранном языке программирования.
+
+Работа с потоками предоставляется классом \textit{thread} \cite{thread}.
+
+Работа с мьютексами предоставляется классом \textit{mutex} \cite{mutex}.
+
+Работа с очередями предоставляется классом \textit{queue} \cite{queue}.
+
+%\section{Реализация алгоритмов}
+В листингах \ref{lst:seq}--\ref{lst:seq2} представлена реализация последовательной работы стадий конвейера.
+
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:seq,caption=Последовательная работа стадий конвейера]
+void linear()
+{
+	int n = TIMES;
+	vector<request *> pool(n);
+	timespec time;
+	for (int i = 0; i < n; ++i)
+	{
+		clock_gettime(CLOCK_REALTIME, &time);
+		request *r = proc_1(DOC_CNT, DOCSIZE);
+		r->p1_start = time;
+		clock_gettime(CLOCK_REALTIME, &(r->p1_end));
+	\end{lstlisting}
+\pagebreak
+\begin{lstlisting}[label=lst:seq2,caption=Последовательная работа стадий конвейера (окончание)]
+		clock_gettime(CLOCK_REALTIME, &(r->p2_start));
+		proc_2(r->files, r->dict);
+		clock_gettime(CLOCK_REALTIME, &(r->p2_end));
+		clock_gettime(CLOCK_REALTIME, &(r->p3_start));
+		proc_3(r->dict, "file.txt");
+		clock_gettime(CLOCK_REALTIME, &(r->p3_end));
+		pool[i] = r;
+	}
+	print_pool(pool, "linear.txt");
+	for (size_t i = 0; i < pool.size(); ++i)
+		delete pool[i];
+}
+	\end{lstlisting}
+\end{center}
+В листинге \ref{lst:master} представлена реализация параллельной работы стадий конвейера.
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:master,caption=Параллельная работа стадий конвейера]
+void parallel()
+{
+	int n = TIMES;
+	string s = "file.txt";
+	vector<request *> pool(n);
+	queue<request *> q1to2;
+	queue<request *> q2to3;
+	thread t_1(thr_1, n, ref(q1to2));
+	thread t_2(thr_2, n, ref(q1to2), ref(q2to3));
+	thread t_3(thr_3, n, ref(q2to3), ref(pool));
+	t_1.join();
+	t_2.join();
+	t_3.join();
+	print_pool(pool, "parallel.txt");
+	for (size_t i = 0; i < pool.size(); ++i)
+		delete pool[i];
+}
+	\end{lstlisting}
+\end{center}
+\clearpage
+В листингах \ref{lst:slave1}, \ref{lst:slave2}, \ref{lst:slave3} представлены реализации каждого потока при параллельной работе.
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:slave1,caption=Поток для стадии 1]
+void thr_1(int n, queue<request *> &q1to2)
+{
+	timespec time;
+	for (int i = 0; i < n; ++i)
+	{
+		clock_gettime(CLOCK_REALTIME, &time);
+		request *r = proc_1(DOC_CNT, DOCSIZE);
+		r->p1_start = time;
+		
+		mutex_q1to2.lock();
+		clock_gettime(CLOCK_REALTIME, &(r->p1_end));
+		q1to2.push(r);
+		mutex_q1to2.unlock();
+	}
+}
+	\end{lstlisting}
+
+	\begin{lstlisting}[label=lst:slave2,caption=Поток для стадии 2]
+void thr_2(int n, queue<request *> &q1to2, queue<request *> &q2to3)
+{
+	for (int i = 0; i < n; ++i)
+	{
+		while (q1to2.empty());
+		mutex_q1to2.lock();
+		request *r = q1to2.front();
+		q1to2.pop();
+		mutex_q1to2.unlock();
+		clock_gettime(CLOCK_REALTIME, &(r->p2_start));
+		proc_2(r->files, r->dict);
+		
+		mutex_q2to3.lock();
+		clock_gettime(CLOCK_REALTIME, &(r->p2_end));
+		q2to3.push(r);
+		mutex_q2to3.unlock();
+	}
+}
+	\end{lstlisting}
+\clearpage
+	\begin{lstlisting}[label=lst:slave3,caption=Поток для стадии 3]
+void thr_3(int n, queue<request *> &q2to3, vector<request *> &pool)
+{
+	for (int i = 0; i < n; ++i)
+	{
+		while (q2to3.empty());
+		mutex_q2to3.lock();
+		request *r = q2to3.front();
+		q2to3.pop();
+		mutex_q2to3.unlock();
+		clock_gettime(CLOCK_REALTIME, &(r->p3_start));
+		proc_3(r->dict, "file.txt");
+		clock_gettime(CLOCK_REALTIME, &(r->p3_end));
+		pool[i] = r;
+	}
+}
+
+\end{lstlisting}
+\end{center}
+
+В листинге \ref{lst:proc1} представлена реализация первой стадии конвейера --- создание набора документов.
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:proc1,caption=Функция работы одного вспомогательного потока]
+request *proc_1(int doc_count, int word_count)
+{
+	request *r = new request();
+	for (int i = 0; i < doc_count; ++i)
+	{
+		vector<string> doc;
+		for (int j = 0; j < word_count; ++j)
+		doc.push_back(gen_random(RAND_LEN));
+		r->files.push_back(doc);
+	}
+	return r;
+}
+\end{lstlisting}
+\end{center}
+\clearpage
+В листинге \ref{lst:proc2} представлена реализация второй стадии конвейера --- вычисление DF.
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:proc2,caption=Функция работы одного вспомогательного потока]
+void proc_2(vector<vector<string>> &files, map<string, int> &dict)
+{
+	for (auto file:files)
+	{
+		set<string> sett;
+		for (auto word : file)
+		sett.insert(word);
+		for (auto s : sett)
+		{
+			if (dict.count(s) == 0)
+				dict.insert({s, 1});
+			else
+				++dict[s];
+		}
+	}
+}
+\end{lstlisting}
+\end{center}
+В листинге \ref{lst:proc3} представлена реализация третьей стадии конвейера --- выборка наиболее употребляемых слов и их запись в выходной файл.
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:proc3,caption=Функция работы одного вспомогательного потока]
+void proc_3(map<string, int> &dict, string filename)
+{
+	ofstream myfile; myfile.open (filename);
+	for (int j = 0; j < WORDS_TO_CHOOSE; j++)
+	{
+		string maxi = dict.begin()->first;
+		int max = dict.begin()->second;
+		for (auto i:dict)
+		{
+			if (i.second > max)
+				max = i.second; maxi = i.first;
+		}
+		dict[maxi] = -1;
+		myfile<<maxi<<' '<<max<<endl;
+	}
+	myfile.close();
+}
+\end{lstlisting}
+\end{center}
+
+
+\section*{Вывод}
+В данном разделе были рассмотрены средства реализации, а также представлены листинги реализаций алгоритма выделения наиболее информативных терминов из выборки документов.

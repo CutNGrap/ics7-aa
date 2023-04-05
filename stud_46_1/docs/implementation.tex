@@ -1,0 +1,66 @@
+% !TeX spellcheck = ru_RU
+\chapter{Технологическая часть}
+В данном разделе будут рассмотрены средства реализации, а также представлены листинги алгоритмов определения расстояния Левенштейна и Даме- рау-Левенштейна.
+\section{Средства реализации}
+% вопрос к слову "минимальным затратами" - относительно чего? обоснование так себе. Быстрее аналогов --- так себе идея
+% требования: обработка строк, рекурсия, проц время === язык подходит под требования === хорошо
+Для данной работы был выбран язык Python \cite{python}. Для данной лабораторной работы требуются инструменты для работы со строками, замеров процессорного времени работы выполняемой программы, визуализации полученных данных. Все перечисленные инструменты присутствуют в выбранном языке программирования
+
+
+\section{Листинги кода}
+% бандитский код
+В листингах \ref{leven} --- \ref{damercache} приведена реализация алгоритмов нахождения расстояния Левенштейна и Дамерау-Левенштейна.
+
+\lstinputlisting[language=Python, firstline=1, lastline=13, label=leven,caption=Функция нахождения расстояния Левенштейна итеративно]{../src/func.py}
+\lstinputlisting[language=Python, firstline=14, lastline=18, label=leven1,caption=Функция нахождения расстояния Левенштейна итеративно]{../src/func.py}
+\lstinputlisting[language=Python, firstline=20, lastline=41, label=damerau,caption=Функция нахождения расстояния Дамерау-Левенштейна итеративно]{../src/func.py}
+\pagebreak
+\lstinputlisting[language=Python, firstline=43, lastline=53, label=damerrec,caption=Функция нахождения расстояния Дамерау-Левенштейна рекурсивно]{../src/func.py}
+\lstinputlisting[language=Python, firstline=56, lastline=73, label=damercache,caption=Функция нахождения расстояния Дамерау-Левенштейна рекурсивно с использованием кэша]{../src/func.py}
+\clearpage
+
+
+
+\section{Функциональные тесты}
+
+% таблица 3.1, не схема; нижняя строка таблицы отвалиалсь
+В таблице \ref{tbl:functional_test} приведены тесты для функций, реализующих алгоритмы нахождения расстояния Левенштейна и Дамерау-Левенштейна.
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_test} Функциональные тесты}
+			\begin{tabular}{|c|c|c|c|c|}
+				\hline
+				& & & \multicolumn{2}{c|}{Ожидаемый результат} \\
+				\hline
+				№&Строка 1&Строка 2&Левенштейн&Дамерау-Левенштейн \\
+				\hline
+				1&""&""&0&0 \\
+				\hline
+				2&""&teststr&7&7 \\
+				\hline
+				3&smthfortest&""&11&11 \\
+				\hline
+				4&test&nest&1&1\\
+				\hline
+				5&usage&sausage&2&2\\
+				\hline
+				6&phn&phone&2&2\\
+				\hline
+				7&ucnle&uncle&2&1\\
+				\hline
+				8&sure&user&3&2\\
+				\hline
+				9&plaanee&plane&2&2\\
+				\hline
+				10&labtpoe&laptop&3&3\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\newline
+Все тесты пройдены функциями успешно.
+\section*{Вывод}
+В данном разделе были разработаны и приведены исходные коды четырех алгоритмов, рассмотренных и описанных ранее. Также, были описаны выбранные средства реализации алгоритмов и функциональные тесты для описанных алгоритмов.

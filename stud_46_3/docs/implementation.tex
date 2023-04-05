@@ -1,0 +1,67 @@
+% !TeX spellcheck = ru_RU
+\chapter{Технологическая часть}
+В данном разделе будут рассмотрены средства реализации, а также представлены листинги алгоритмов сортировки.
+\section{Средства реализации}
+Для данной работы был выбран язык $Python$ \cite{python}. В данной лабораторной работе требуются инструменты для замеров времени и визуализации данных. Необходимые для этого инструменты есть в этом языке программирования.
+
+
+\section{Реализация алгоритмов}
+
+В листингах \ref{bubble} --- \ref{insertion} приведена реализация алгоритмов сортировки --- пузырьком, пирамидальной, блочной.
+
+\lstinputlisting[language=Python, firstline=3, lastline=11, label=bubble,caption=Функция сортировки массива пузырьком]{../src/func.py}
+\pagebreak
+
+\lstinputlisting[language=Python, firstline=68, lastline=77, label=heapsort,caption=Функция пирамидальной сортировки массива]{../src/func.py}
+
+\lstinputlisting[language=Python, firstline=54, lastline=66, label=heapify, caption=Процедура heapify используемая для создания невозрастающей бинарной пирамиды]{../src/func.py}
+
+\lstinputlisting[language=Python, firstline=13, lastline=24, label=bucket,caption=Функция блочной сортировки массива]{../src/func.py}
+
+\lstinputlisting[language=Python, firstline=25, lastline=40, label=bucket_1,caption=Функция блочной сортировки массива]{../src/func.py}
+
+
+\lstinputlisting[language=Python, firstline=42, lastline=50, label=insertion,caption=Функция сортировки массива вставками\, используемая как подпрограмма в функции блочной сортировки]{../src/func.py}
+
+\clearpage
+\section{Функциональные тесты}
+
+Для тестирования реализаций алгоритмов использовалась методология тестирования черным ящиком.
+В таблице \ref{tbl:test} приведены тесты для функций, реализующих алгоритмы сортировки. Все тесты пройдены успешно. 
+
+\begin{table}[h]
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\caption{Тестирование функций}
+	\label{tbl:test}
+	\centering
+	\begin{tabular}{|c|c|c|}
+		\hline
+		Входной массив & Результат & Ожидаемый результат \\ 
+		\hline
+		$[15, 25, 35, 45, 55]$ & $[15, 25, 35, 45, 55]$  & $[15, 25, 35, 45, 55]$\\\hline
+		$[55, 45, 35, 25, 15]$  & $[15, 25, 35, 45, 55]$ & $[15, 25, 35, 45, 55]$\\\hline
+		$[-10, -20, -30, -25]$  & $[-30, -25, -20, -10]$  & $[-30, -25, -20, -10]$\\\hline
+		$[40, -10, 20, -30, 75]$  & $[-30, -10, 20, 40, 75]$  & $[-30, -10, 20, 40, 75]$\\\hline
+		$[100]$  & $[100]$  & $[100]$\\\hline
+		$[-20]$  & $[-20]$  & $[-20]$\\\hline
+		[ ]  & [ ]  & [ ]\\
+		\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h]
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\caption{Результаты замеров времени работы реализаций сортировок на отсортированных по возрастанию массивах (в мсек)}
+	\label{tbl:sorted}
+	\centering
+	\begin{tabular}{|c|c|c|c|c|}\hline%
+		Размер & Пузырьком &  Пирамидальная &  Блочная
+		\csvreader[head to column names]{csv/sorted.csv}{}%
+		{\\ \hline\len & \bubble & \heap & \bucket}%
+		\\ \hline
+	\end{tabular}
+\end{table}
+%\clearpage
+
+\section*{Вывод}
+В данном разделе были разработаны и приведены исходные коды алгоритмов, рассмотренных и описанных ранее. Также, были описаны выбранные средства реализации алгоритмов и функциональные тесты для описанных алгоритмов.

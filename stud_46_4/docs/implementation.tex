@@ -1,0 +1,131 @@
+% !TeX spellcheck = ru_RU
+\chapter{Технологическая часть}
+В данном разделе рассмотрены средства реализации, а также представлены листинги реализации алгоритма выделения наиболее информативных терминов, по метрике DF, из выборки документов.
+
+\section{Средства реализации}
+Для данной работы был выбран язык С \cite{c-lang}. Для данной лабораторной работы требуются инструменты для работы с массивами и потоками, замеров времени работы выполняемой программы. Все перечисленные инструменты присутствуют в выбранном языке программирования.
+
+Для работы с потоками использовались функции заголовочного файла <pthread.h> \cite{pthread}. Для работы с сущностью вспомогательного потока необходимо воспользоваться функцией $pthread\_create()$ для создания потока и указания функции, которую начнет выполнять созданный поток. Далее при помощи вызова $pthread\_join()$ необходимо (в рамках данной лабораторной работы) дождаться  завершения всех вспомогательных потоков, чтобы в главном потоке обработать результаты их работы.
+
+
+\section{Реализация алгоритмов}
+В листингах \ref{lst:DF} -- \ref{lst:thr} приведены реализации алгоритма выделения наиболее информативных терминов из выборки документов.
+В качестве терминов в данной реализации рассматриваются односложные слова из букв латинского алфавита. В качестве документов рассматриваются строки, состоящие из таких слов.
+
+\clearpage
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:DF,caption=Однопоточная функция выделения наиболее употребляемых термов]
+void one_thread(int docs_cnt, int doc_size)
+{
+	char *docs = malloc(sizeof(char) * docs_cnt * doc_size);
+	set_frequency(docs, docs_cnt, doc_size);
+	
+	int word_count[LETTERS_CNT];
+	for (int i = 0; i < LETTERS_CNT; ++i)
+	word_count[i] = 0;
+	
+	for (int i = 0; i < docs_cnt; ++i)
+	{
+		for (int j = 0; j < doc_size; ++j)
+		printf("%c", docs[i * doc_size + j]);
+		printf("\n");
+	}
+	
+	for (int i = 0; i < docs_cnt; ++i)
+	{
+		int flag_arr[LETTERS_CNT] = {0};
+		for (int j = 0; j < DOCSIZE; ++j)
+		{
+			int number = (docs)[i*DOCSIZE + j] - 'a';
+			flag_arr[number] = 1;
+		}
+			
+		for (int i = 0; i < LETTERS_CNT; ++i)
+			word_count[i] += flag_arr[i];
+	}
+	printf("word_count:\n");
+	for (int i = 0; i < LETTERS_CNT; ++i)
+		printf("%d ", word_count[i]);
+	printf("\nMost frequent terms:");
+	for (int j = 0; j < 5; j++)
+	{
+		int maxi = 0;
+		int max = word_count[maxi];
+		for (int i = 0; i < LETTERS_CNT; ++i)
+		{
+	\end{lstlisting}
+\clearpage
+	\begin{lstlisting}[label=lst:DF2,caption=Однопоточная функция выделения наиболее употребляемых термов]
+			if (word_count[i] > max)
+			{
+				max = word_count[i];
+				maxi = i;
+			}
+		}
+		printf(" %c", 'a' + maxi);
+		word_count[maxi] = -1;
+	}
+	free(docs);
+	\end{lstlisting}
+
+	\begin{lstlisting}[label=lst:main,caption=Функция работы основного потока\, запускающего вспомогательные потоки]
+void with_threads(int threads, char *docs, int docs_cnt)
+	int *word_count = calloc(threads * LETTERS_CNT, sizeof(int));
+	pthread_t *tid = malloc(threads * sizeof(pthread_t));
+	thread_args_t *args = malloc(threads * sizeof(thread_args_t));
+	if (tid && args)
+	{
+		int delta_doc = docs_cnt / threads;
+		int last = docs_cnt % threads;
+		int start = 0;
+		int end = delta_doc + last;
+		for (int thread = 0; thread < threads; ++thread)
+		{
+			(args + thread)->start_doc = start;
+			(args + thread)->end_doc = end;
+			// (args + thread)->mutex = mutex;
+			(args + thread)->docs = docs;
+			(args + thread)->word_count = word_count + thread * LETTERS_CNT;
+			pthread_create(tid + thread, NULL, &thread_work, args + thread);
+			start = end;
+			end += delta_doc;
+		}
+		for (int thread = 0; thread < threads; ++thread)
+		pthread_join(tid[thread], NULL);
+	}
+}
+	\end{lstlisting}
+
+	\begin{lstlisting}[label=lst:thr,caption=Функция работы одного вспомогательного потока]
+void *thread_work(void *args)
+{
+	thread_args_t *arg = args;
+	
+	int start = arg->start_doc;
+	int end = arg->end_doc;
+	char *docs = arg->docs;
+	int *word_count = arg->word_count;
+	for (int i = start; i < end; ++i)
+	{
+		int *flag_arr = allocate_flag_arr(LETTERS_CNT);
+		for (int j = 0; j < DOCSIZE; ++j)
+		++(flag_arr[(docs)[i*DOCSIZE + j] - 'a']);
+		
+		for (int i = 0; i < LETTERS_CNT; ++i)
+		{
+			if (flag_arr[i])
+			++(word_count[i]);
+		}
+		free_flag_arr(flag_arr);
+	}
+	
+	return NULL;
+}
+	\end{lstlisting}
+\end{center}
+
+
+
+\section*{Вывод}
+В данном разделе были рассмотрены средства реализации, а также представлен листинг реализации алгоритма выделения наиболее информативных терминов из выборки документов.
